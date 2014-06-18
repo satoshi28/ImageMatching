@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
 	std::vector<cv::Mat> queryDescriptors;
 
-
+	int descSizeRow = 0;
 	/* 時間計測スタート */
 	startTic = cvGetTickCount();
 
@@ -79,11 +79,15 @@ int main(int argc, char *argv[])
 		detector->detect(queryImages[i],keypoints);
 		extractor->compute(queryImages[i],keypoints,descriptors);
 
+		descSizeRow += descriptors.rows;
+
 		queryKeypoints.push_back(keypoints);
 		queryDescriptors.push_back(descriptors);
 	}
 	stopTic = cvGetTickCount();
 	/* 計測終了 */
+	std::cout << descSizeRow << std::endl;
+	descSizeRow =0;
 
 	for(int i =0; i < databaseImages.size();i++)
 	{
@@ -91,6 +95,8 @@ int main(int argc, char *argv[])
 		cv::vector<cv::KeyPoint> keypoints;
 		detector->detect(databaseImages[i],keypoints);
 		extractor->compute(databaseImages[i],keypoints,descriptors[0]);
+
+		descSizeRow += descriptors[0].rows;
 
 		cv::Ptr<cv::DescriptorMatcher>   matcher   = new cv::BFMatcher(NORM_HAMMING,false);
 		matcher->add(descriptors);
@@ -100,6 +106,7 @@ int main(int argc, char *argv[])
 		matchers.push_back(matcher);
 	}
 
+	std::cout << descSizeRow << std::endl;
 
 	
 
