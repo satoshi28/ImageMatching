@@ -52,13 +52,13 @@ int main(int argc, char *argv[])
 	readImages(databaseFilelist, databaseImages);
 
 	
-	//SurfFeatureDetector detector(400);
-	//SurfDescriptorExtractor extractor;
+	SurfFeatureDetector detector(400);
+	SurfDescriptorExtractor extractor;
 	//FastFeatureDetector detector(30);
 	//cv::Ptr<cv::FeatureDetector>     detector  = new cv::OrbFeatureDetector(1500,2.0f); 
     //cv::Ptr<cv::DescriptorExtractor> extractor = new cv::OrbDescriptorExtractor;
-	cv::Ptr<cv::FeatureDetector>     detector  = new cv::BRISK; 
-    cv::Ptr<cv::DescriptorExtractor> extractor = new cv::BRISK;
+	//cv::Ptr<cv::FeatureDetector>     detector  = new cv::BRISK; 
+    //cv::Ptr<cv::DescriptorExtractor> extractor = new cv::BRISK;
 	///cv::Ptr<cv::FeatureDetector>     detector  = new cv::SURF(400); 
     //cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SURF;
 
@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
 	{
 		cv::Mat descriptors;
 		cv::vector<cv::KeyPoint> keypoints;
-		detector->detect(queryImages[i],keypoints);
-		extractor->compute(queryImages[i],keypoints,descriptors);
+		detector.detect(queryImages[i],keypoints);
+		extractor.compute(queryImages[i],keypoints,descriptors);
 
 		queryKeypoints.push_back(keypoints);
 		queryDescriptors.push_back(descriptors);
@@ -89,10 +89,10 @@ int main(int argc, char *argv[])
 	{
 		std::vector<cv::Mat> descriptors(1);
 		cv::vector<cv::KeyPoint> keypoints;
-		detector->detect(databaseImages[i],keypoints);
-		extractor->compute(databaseImages[i],keypoints,descriptors[0]);
+		detector.detect(databaseImages[i],keypoints);
+		extractor.compute(databaseImages[i],keypoints,descriptors[0]);
 
-		cv::Ptr<cv::DescriptorMatcher>   matcher   = new cv::BFMatcher(NORM_HAMMING,false);
+		cv::Ptr<cv::DescriptorMatcher>   matcher   = new cv::BFMatcher(NORM_L2,false);
 		matcher->add(descriptors);
 		matcher->train();
 
