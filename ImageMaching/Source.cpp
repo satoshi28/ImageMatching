@@ -23,8 +23,8 @@ std::vector<cv::vector<cv::KeyPoint>> trainKeypoints;
 
 int main(int argc, char *argv[])
 {
-	System::String^ IMAGE_DIR = "C:\\Users\\satoshi\\Documents\\Image\\query\\";	// 画像が保存されているフォルダ
-	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\";	// 画像が保存されているフォルダ
+	System::String^ IMAGE_DIR = "C:\\Users\\satoshi\\Documents\\Image\\queryHiraizumi\\";	// 画像が保存されているフォルダ
+	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\hiraizumi\\";	// 画像が保存されているフォルダ
 
 	std::ofstream txtFile("matchingReslut_BRISK.txt");
 
