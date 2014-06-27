@@ -71,22 +71,30 @@ int main(int argc, char *argv[])
 	int descSizeRow =0;
 
 	/* 時間計測スタート */
+	int totalTime = 0;
+	int totalKeyPoint = 0;
 	startTic = cvGetTickCount();
 
 	for(int i =0; i < queryImages.size();i++)
 	{
 		cv::Mat descriptors;
 		cv::vector<cv::KeyPoint> keypoints;
-		detector.detect(queryImages[i],keypoints);
-		extractor->compute(queryImages[i],keypoints,descriptors);
 
-		descSizeRow += descriptors.rows;
+		startTic = cvGetTickCount();
+		detector.detect(queryImages[i],keypoints);
+		stopTic = cvGetTickCount();
+
+		totalTime += stopTic - startTic;
+		totalKeyPoint += keypoints.size();
+
+		extractor->compute(queryImages[i],keypoints,descriptors);
 
 		queryKeypoints.push_back(keypoints);
 		queryDescriptors.push_back(descriptors);
 	}
-	stopTic = cvGetTickCount();
-	/* 計測終了 */
+	  std::cout << "average_detect_time:"<<totalTime/ ticFrequency/queryImages.size()/1000 << "[ms]"<< std::endl;
+	  std::cout << "keypoint/time:"<<totalTime/ ticFrequency/totalKeyPoint << "[us]"<< std::endl;
+	
 
 	std::cout << descSizeRow << std::endl;
 	descSizeRow = 0;
