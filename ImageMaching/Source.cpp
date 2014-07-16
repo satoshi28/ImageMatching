@@ -23,8 +23,8 @@ std::vector<cv::vector<cv::KeyPoint>> trainKeypoints;
 
 int main(int argc, char *argv[])
 {
-	System::String^ IMAGE_DIR = "C:\\Users\\satoshi\\Documents\\Image\\queryHiraizumi\\";	// 画像が保存されているフォルダ
-	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\hiraizumi\\";	// 画像が保存されているフォルダ
+	System::String^ IMAGE_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\query";	// 画像が保存されているフォルダ
+	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\database";	// 画像が保存されているフォルダ
 
 	std::ofstream txtFile("matchingReslut_SURF+BRISK.txt");
 
@@ -53,14 +53,8 @@ int main(int argc, char *argv[])
 
 	
 	SurfFeatureDetector detector(400);
-	//SurfDescriptorExtractor extractor;
-	//FastFeatureDetector detector(30);
-	//cv::Ptr<cv::FeatureDetector>     detector  = new cv::OrbFeatureDetector(1500,2.0f); 
-    //cv::Ptr<cv::DescriptorExtractor> extractor = new cv::OrbDescriptorExtractor;
-	//cv::Ptr<cv::FeatureDetector>     detector  = new cv::BRISK; 
     cv::Ptr<cv::DescriptorExtractor> extractor = new cv::BRISK;
-	///cv::Ptr<cv::FeatureDetector>     detector  = new cv::SURF(400); 
-    //cv::Ptr<cv::DescriptorExtractor> extractor = new cv::SURF;
+
 
 	//OrbDescriptorExtractor extractor; //ORB特徴量抽出機
 
@@ -107,7 +101,7 @@ int main(int argc, char *argv[])
 
 		descSizeRow += descriptors[0].rows;
 
-		cv::Ptr<cv::DescriptorMatcher>   matcher   = new cv::BFMatcher(NORM_L2,false);
+		cv::Ptr<cv::DescriptorMatcher>   matcher   = cv::DescriptorMatcher::create("BruteForce-Hamming");
 		matcher->add(descriptors);
 		matcher->train();
 
