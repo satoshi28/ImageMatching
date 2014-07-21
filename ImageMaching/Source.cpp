@@ -100,6 +100,7 @@ int main(int argc, char *argv[])
 		extractor->compute(databaseImages[i],keypoints,descriptors[0]);
 
 		descSizeRow += descriptors[0].rows;
+		std::cout << descriptors[0].size() << std::endl;
 
 		cv::Ptr<cv::DescriptorMatcher>   matcher   = cv::DescriptorMatcher::create("BruteForce-Hamming");
 		matcher->add(descriptors);
