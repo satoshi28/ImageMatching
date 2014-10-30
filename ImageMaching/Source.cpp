@@ -13,18 +13,15 @@ using namespace cv;
 float minRatio = 0.8f;
 
 bool readImages(std::vector<std::string> filenames, std::vector<cv::Mat>& images);
-void match(std::vector<cv::KeyPoint> queryKeypoints, cv::Mat queryDescriptors, std::vector<cv::KeyPoint> trainKeypoints,cv::Ptr<cv::DescriptorMatcher>& m_matcher,
+void match(cv::Mat queryDescriptors, cv::Ptr<cv::DescriptorMatcher>& m_matcher,
 				std::vector<cv::DMatch>& matches);
-bool geometricConsistencyCheck(std::vector<cv::KeyPoint> queryKeypoints, std::vector<cv::KeyPoint> trainKeypoints, std::vector<cv::DMatch>& match);
 int getResult(std::vector<std::string> filelist, cv::Mat& resultImage);
 
-std::vector<cv::vector<cv::KeyPoint>> queryKeypoints;
-std::vector<cv::vector<cv::KeyPoint>> trainKeypoints;
 
 int main(int argc, char *argv[])
 {
 	System::String^ IMAGE_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\query";	// 画像が保存されているフォルダ
-	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\database";	// 画像が保存されているフォルダ
+	System::String^ DATABASE_IMG_DIR = "C:\\Users\\satoshi\\Documents\\Image\\ZuBuD\\databaseImage";	// 画像が保存されているフォルダ
 
 	std::ofstream txtFile("matchingReslut_SURF+BRISK.txt");
 
@@ -58,8 +55,6 @@ int main(int argc, char *argv[])
 
 	//OrbDescriptorExtractor extractor; //ORB特徴量抽出機
 
-	std::vector< cv::Ptr<cv::DescriptorMatcher> > matchers;
-
 	std::vector<cv::Mat> queryDescriptors;
 
 	int descSizeRow =0;
@@ -83,7 +78,6 @@ int main(int argc, char *argv[])
 
 		extractor->compute(queryImages[i],keypoints,descriptors);
 
-		queryKeypoints.push_back(keypoints);
 		queryDescriptors.push_back(descriptors);
 	}
 	  std::cout << "average_detect_time:"<<totalTime/ ticFrequency/queryImages.size()/1000 << "[ms]"<< std::endl;
@@ -92,43 +86,60 @@ int main(int argc, char *argv[])
 
 	std::cout << descSizeRow << std::endl;
 	descSizeRow = 0;
+
+	std::vector<cv::Mat> trainDescriptors;
 	for(int i =0; i < databaseImages.size();i++)
 	{
-		std::vector<cv::Mat> descriptors(1);
+		cv::Mat descriptors;
 		cv::vector<cv::KeyPoint> keypoints;
 		detector.detect(databaseImages[i],keypoints);
-		extractor->compute(databaseImages[i],keypoints,descriptors[0]);
+		extractor->compute(databaseImages[i],keypoints,descriptors);
 
-		descSizeRow += descriptors[0].rows;
+		descSizeRow += descriptors.rows;
 
-		cv::Ptr<cv::DescriptorMatcher>   matcher   = cv::DescriptorMatcher::create("BruteForce-Hamming");
-		matcher->add(descriptors);
-		matcher->train();
+		trainDescriptors.push_back(descriptors);
 
-		trainKeypoints.push_back(keypoints);
-		matchers.push_back(matcher);
 	}
+	printf("%i",descSizeRow);
+	
+	cv::Ptr<cv::flann::IndexParams>  index_params = new cv::flann::LshIndexParams(6,12,1);
+	cv::Ptr<cv::flann::SearchParams> search_params = new cv::flann::SearchParams(50);
+	cv::FlannBasedMatcher matcher = cv::FlannBasedMatcher(index_params, search_params);
 
+	matcher.add(trainDescriptors);
+	matcher.train();
+
+	/*
+
+	cv::Ptr<cv::DescriptorMatcher>   matcher   = cv::DescriptorMatcher::create("BruteForce-Hamming");
+	matcher->add(trainDescriptors);
+	matcher->train();
+	*/
 	std::cout << descSizeRow << std::endl;
 	
+	//マッチングしたペア
+	std::vector<cv::DMatch> matches;
 
 	for(int i =0; i< queryDescriptors.size(); i++)
 	{
 		std::vector< std::pair<int, int> > imageRankingList(databaseImages.size());	//各画像のランキング(rank, index)
 
-		for(int j = 0; j < databaseImages.size();j++)
+		//マッチング
+		//match(queryDescriptors[i], matcher, matches);
+		matcher.match(queryDescriptors[i], matches);
+		//初期化
+		for(int i = 0; i < databaseImages.size(); i++)
 		{
-			std::pair<int, int> list;
-			std::vector<cv::DMatch> matches;
+			imageRankingList[i].first = 0;
+			imageRankingList[i].second = i;
+		}
 
-			//マッチング
-			match(queryKeypoints[i], queryDescriptors[i],trainKeypoints[j],matchers[j], matches);
-			
-
-			list.first = matches.size();
-			list.second = j;
-
-			imageRankingList.push_back(list);
+		//評価
+		int num;
+		for(int j = 0; j < matches.size(); j++)
+		{
+			num = matches[j].imgIdx;
+			imageRankingList[num].first += 1;
 		}
 
 		//画像のランキングに基づいて降順に並び替え
@@ -166,7 +177,7 @@ int main(int argc, char *argv[])
   cv::waitKey(0);
 }
 
-void match(std::vector<cv::KeyPoint> queryKeypoints, cv::Mat queryDescriptors, std::vector<cv::KeyPoint> trainKeypoints,cv::Ptr<cv::DescriptorMatcher>& m_matcher,
+void match(cv::Mat queryDescriptors, cv::Ptr<cv::DescriptorMatcher>& m_matcher,
 				std::vector<cv::DMatch>& matches)
 {
 	matches.clear();
@@ -199,11 +210,6 @@ void match(std::vector<cv::KeyPoint> queryKeypoints, cv::Mat queryDescriptors, s
 			}
 		}
 	}
-
-	//幾何学的整合性チェック
-	bool passFlag = geometricConsistencyCheck(queryKeypoints, trainKeypoints, matches);
-
-
 	
 }
 
@@ -231,38 +237,6 @@ bool readImages(std::vector<std::string> filenames, std::vector<cv::Mat>& images
 		images.push_back(grayImage);
 
 	}
-}
-
-bool geometricConsistencyCheck(std::vector<cv::KeyPoint> queryKeypoints, std::vector<cv::KeyPoint> trainKeypoints, std::vector<cv::DMatch>& match)
-{
-	if(match.size() < 8)
-	{
-		match.clear();
-		return false;
-
-	}
-	std::vector<cv::Point2f>  queryPoints, trainPoints; 
-	for(int i = 0; i < match.size(); i++)
-	{
-		queryPoints.push_back(queryKeypoints[match[i].queryIdx].pt);
-		trainPoints.push_back(trainKeypoints[match[i].trainIdx].pt);
-	}
-
-	//幾何学的整合性チェック
-	std::vector<unsigned char> inliersMask(queryPoints.size() );
-
-	//幾何学的整合性チェックによって当たり値を抽出
-	cv::findHomography( queryPoints, trainPoints, CV_FM_RANSAC, 10, inliersMask);
-
-	std::vector<cv::DMatch> inliers;
-	for(size_t i =0 ; i < inliersMask.size(); i++)
-	{
-		if(inliersMask[i])
-			inliers.push_back(match[i]);
-	}
-
-	match.swap(inliers);
-	return true;
 }
 
 int getResult(std::vector<std::string> filelist, cv::Mat& resultImage)
